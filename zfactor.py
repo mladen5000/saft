@@ -7,10 +7,6 @@ import matplotlib.pyplot as plt
 from SAFT import *
 
 
-#Z_assocs need mu_assocs
-#Zchain =  sumoveri(xi(1-mi) * pdln/dp)
-
-#where pdln/dp = 1./gii(dii)hs*[zeta3/(1-zeta3)**2 +1.5*dii*zeta2/(1-zeta3)**2 + 3diizeta2zeta3/(1-zeta3)**3 +dii**2*zeta2**2/(1-zeta3)**3 + 1.5*dii**2 *zeta2**2 *zeta3/(1-zeta3)**4
 
 def Z_Chain(T,dens_num,mix):
 
