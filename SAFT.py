@@ -3,6 +3,7 @@ import numpy as np
 from scipy.optimize import fsolve
 from math import *
 from mix import *
+import matplotlib.pyplot as plt
 
 
 
@@ -42,7 +43,6 @@ def Helmholtz_Chain(T,dens_num,mix):
 			for j in range(0,num_c):
 				zeta[i] +=  mix.xcomp[j]*mix.m[j]*d[j]**i #Eq. 27
 			zeta[i] *= dens_num*pi/6.0
-			print zeta[i]
 
 		#Calculate the RDF
 		RDF = np.zeros((num_c,num_c))
@@ -53,7 +53,6 @@ def Helmholtz_Chain(T,dens_num,mix):
 				term2 = 3.*d[i]*d[j] / (d[i]+d[j])  * zeta[2] / (1. - zeta[3])**2
 				term3 = 2.*( d[i]*d[j] / (d[i]+d[j]))**2  * zeta[2]**2 / (1-zeta[3])**3
 				RDF[i,j] = term1 + term2 + term3
-		print "THE RDF IS:", RDF
 
 		
 		#Chain contribution to Helmholtz Energy
@@ -124,68 +123,58 @@ def Helmholtz_Seg(T,dens_num,mix):
 		return a_seg
 
 def Xa_Calculation(Xa,T,dens_num,mix,d,RDF):
+		#Total number of associating sites
+		num_assocs = mix.num_assocs[0]+mix.num_assocs[1] #FIXMELATER only for binary mixtures atm
 		
 		#Association Strength
 		delta = np.zeros((num_assocs,num_assocs))
+		indx1 =-1 
 		for i in range(0,num_c):
-			for j in range(0,num_assocs):
+			for j in range(0,mix.num_assocs[0]): #FIXMELATER binary case only
+				indx1 += 1
+				indx2 =-1 
 				for k in range(0,num_c):
-					for l in range(0,num_assocs):
+					for l in range(0,mix.num_assocs[1]): #FIXMELATER binary case only
+						indx2 += 1
 
 						if i==k:
 							kappa = mix.kappa[i][j,l]
-							epsilon = mix.epsilon[i][j,l]
+							epsilon = mix.eps_ass[i][j,l]
 						else:
 							#These are some abritrary mixing rules
 							#FIXMELATER 1. need to work out 'max', 2. need to understand these mixing rules
-							k1 = max(mix.kappa[i])
-							k2 = max(mix.kappa[k])
-							e1 = max(mix.epsilon[i])
-							e2 = max(mix.epsilon[k])
+							k1 = mix.kappa[i].max()
+							k2 = mix.kappa[k].max()
+							e1 = mix.eps_ass[i].max()
+							e2 = mix.eps_ass[k].max()
 							kappa = sqrt(k1*k2) * (sqrt(mix.sigma[i]*mix.sigma[k])/(0.5*(mix.sigma[i]+mix.sigma[k])))**3
 							epsilon = 0.5*(e1 + e2)
 
 						dij = (d[i]+d[k])/2.0
-						delta[j,l] = dij**3 * RDF[i,k] * kappa * exp( (epsilon/T) - 1.0 )
+						delta[indx1,indx2] = dij**3 * RDF[i,k] * kappa * (exp(epsilon/T) - 1.0 )
+		#FIXMELATER The loops of ijkl need to fix j and l because num_assocs is an array, should be in mix to contain each
+
+		#FIXMELATER fixed at 4
+		res = np.zeros((4,1))
+		indx1 = -1
+		for i in range(0,num_c):
+			for j in range(0,mix.num_assocs[0]):
+				indx1 += 1
+				indx2 = -1
+				RHS_Xa = 0
+				for k in range(0,num_c):
+					for l in range(0,mix.num_assocs[1]):
+						indx2 += 1
+
+						RHS_Xa += mix.xcomp[k]*dens_num*Xa[indx2]*delta[indx1,indx2]
 
 
-		"""
-		count1 = 0
-		for i in range(0,num_assocs):
-			count1 = count1 + 1
-			count2 = 0
-			for j in range(0,num_assocs):
-				kappa_current = kappa.item((i,j))
-				epsilon = eps_ass.item((i,j))
-				delta[i,j] = d**3 * RDF * kappa_current * (exp(epsilon/T) - 1)
-		"""
+				res[indx1] = Xa[indx1] - (1. + RHS_Xa)**(-1) #Minimize the difference between Xa and RHS of Xa, should min to 0...ideally
 
-		#Calculate Equation for Xa
-		res = np.zeros((num_assocs,1))
-		count1 = 0
-		for i in range(0,num_assocs):
-			count1 = count1 + 1
-			count2 = 0
-			sumtotal = 0
 
-			for j in range(0,num_assocs):
-				sumtotal = sumtotal + xcomp*dens_num*Xa[j]*delta[i,j]
-
-			res[i] = Xa[i] - (1+sumtotal)**(-1)
-
-		#Calculate the Jacobian
-		J = np.zeros((num_assocs,num_assocs))
-
-		for i in range(0,num_assocs):
-			sumtotal = 0
-			for j in range(0,num_assocs):
-				sumtotal = sumtotal + xcomp*dens_num*Xa[j]*delta[i,j]
-			for j in range(0,num_assocs):
-				J[i,j] = J[i,j] + xcomp*dens_num*delta[i,j] / (1+sumtotal)**2
-			J[i,i] = J[i,i] + 1
-
-		#Only works for n = 2 right now
-		output = [res.item(0),res.item(1)]
+		#FIXMELATER
+		#Only works for n = fixed right now
+		output = [res.item(0),res.item(1),res.item(2),res.item(3)]
 		return output
 
 
@@ -204,7 +193,6 @@ def Helmholtz_Ass(T,dens_num,mix):
 			for j in range(0,num_c):
 				zeta[i] +=  mix.xcomp[j]*mix.m[j]*d[j]**i #Eq. 27
 			zeta[i] *= dens_num*pi/6.0
-			print zeta[i]
 
 		#Calculate the RDF
 		RDF = np.zeros((num_c,num_c))
@@ -215,46 +203,33 @@ def Helmholtz_Ass(T,dens_num,mix):
 				term2 = 3.*d[i]*d[j] / (d[i]+d[j])  * zeta[2] / (1. - zeta[3])**2
 				term3 = 2.*( d[i]*d[j] / (d[i]+d[j]))**2  * zeta[2]**2 / (1-zeta[3])**3
 				RDF[i,j] = term1 + term2 + term3
-		print "THE RDF IS:", RDF
 
 		#Initial Values to guess for X^i
-		#Only works for n=2 right now
-		x0 = [0.91, 0.91]
+		#Only works for num_assocs=4 right now
+		x0 = [0.3,0.3,0.3,0.3]
 
-		Xa = fsolve( Xa_Calculation , x0 , args=(T,dens_num,m,sigma,kappa,eps_ass,xcomp,num_assocs,d,RDF) )
+		Xa = fsolve( Xa_Calculation , x0 , args=(T,dens_num,mix,d,RDF) )
 
 		#Finally Calculate A_Assoc
 		A_assoc = 0
-		for i in range(0,num_assocs):
-			A_assoc = A_assoc + log(Xa[i]) - Xa[i]/2 
-		A_assoc = A_assoc + 0.5*num_assocs
+		indx1 = -1
+		for i in range(0,2):
+			sum1 = 0
+			for j in mix.num_assocs:
+				indx1 += 1
+				sum1 += log(Xa[indx1]) - Xa[indx1]/2.0
+			A_assoc += mix.xcomp[i]*(sum1 + 0.5*mix.num_assocs[i])
 		return A_assoc
 
 
-def Sum_Helmholtz(c1):
-
-		#General Required Input Parameters
-		T=313.0 #Temperature (Kelvins)
-		dens_num=0.001 #Density number (Not molar density)
-		m=c1.m #Avg number of segments per chain 
-		sigma=c1.sigma #Temperature Independent diameter (Angstroms)
-		epsilon = c1.epsilon #LJ Interaction energy (Kelvins)
-
-		#Association Parameters
-		num_assocs= c1.num_assocs
-		#Arrays [ [AA AB], [BA, BB] ]
-		kappa = c1.kappa #Association Volume (Dimensionless)
-		eps_ass = c1.eps_ass #Association Energy (Kelvins)
-
-		#Composition
-		xcomp=1
+def Sum_Helmholtz(T,dens_num,mix):
 
 		#Call Necessary functions
-		a_assoc = Helmholtz_Ass(T,dens_num,m,sigma,kappa,epsilon,xcomp,num_assocs,eps_ass)
-		a_seg 	= Helmholtz_Seg(T,dens_num,c1)
-		a_chain = Helmholtz_Chain(T,dens_num,m,sigma,epsilon,xcomp)
+		a_assoc = Helmholtz_Ass(T,dens_num,mix)
+		a_seg 	= Helmholtz_Seg(T,dens_num,mix)
+		a_chain = Helmholtz_Chain(T,dens_num,mix)
 		A = a_assoc + a_seg + a_chain
-"""
+		"""
 		#Print it out
 		print " "
 		print " -------Helmholtz-------"
@@ -266,6 +241,7 @@ def Sum_Helmholtz(c1):
 		print "Your Helmholtz energy is",  A
 		print " "
 		"""
+		return A
 	
 """Initialize it"""
 T=313.0 #Temperature (Kelvins)
@@ -273,19 +249,27 @@ dens_num=0.001 #Density number (Not molar density), given by molar density x N_A
 m=2.457 #Avg number of segments per chain 
 sigma=3.044 #Temperature Independent diameter (Angstroms)
 epsilon = 213.48 #LJ Interaction energy (Kelvins), ((technically epsilon/k))
-num_assocs=2
-kappa = np.array([[0., 0.0292],[0.0292,0]]) #Association Volume (Dimensionless)
-eps_ass = np.array([[0, 2619],[2619,0]]) #Association Energy (Kelvins)
-
-EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
-EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
-my_mixture = Mix(EtOH1,EtOH2)
-print my_mixture.kappa[0][0,1]
-#print Helmholtz_Chain(T,dens_num,my_mixture)
-
-
-#Sum_Helmholtz(EtOH)
+num_assocs=0
+kappa = np.array([[0.0, 0.0292],[0.0292,0.0]]) #Association Volume (Dimensionless)
+eps_ass = np.array([[0.0, 2619],[2619,0.0]]) #Association Energy (Kelvins)
+num_c = 2
+# ----------------------------------------------------------------------------------------------
+EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.2)
+EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.8)
+mix = Mix(EtOH1,EtOH2)
 
 
+y = np.zeros(700)
 
-		
+T = np.arange(150,850)
+i=0
+for tval in T:
+	y[i] = Sum_Helmholtz(tval,dens_num,mix)
+	i += 1
+plt.plot(T,y)
+plt.show()
+
+
+
+
+
