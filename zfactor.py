@@ -50,8 +50,44 @@ def Z_Chain(T,dens_num,mix):
 			#Determine Z_chain
 			zchain += mix.xcomp[i]*(1-mix.m[i])*derivRDF[i] #Eq. A.11
 			print zchain
+			return zchain
 
-		return 1
+def Z_Seg(T,dens_num,mix):
+		#Calculate temp-dependent segment diameter for each compound
+		d=[0,0] #FIXMELATER
+		for i in range(0,num_c):
+			d[i] = HS_Diameter(T,mix.m[i],mix.sigma[i],mix.epsilon[i])
+
+
+		#Reduced Density, eta
+		eta_term = 0
+		for i in range(0,num_c):
+			eta_term += mix.xcomp[i]*mix.m[i]*d[i]**3 #Eq. 33 (d is modified)
+		eta = (pi * dens_num * eta_term)/6.0 
+
+		#Calculate Zo for Hard Spheres
+		Zo_HS = (1.0 + eta + eta**2 + eta**3) / (1.0 - eta)**3 #Eq. A.15
+
+		#Calculate reduced Density, pr
+		pr = eta*(6.0/(pi*sqrt(2)))
+
+		#Calculate Zo for Dispersion
+		zo1_disp = pr * (-8.595 - 2.*(4.5424*pr) - 3.*(2.1268*pr*pr) + 4.*(10.285*pr**3) ) #Eq. A.17
+		zo2_disp = pr * (-1.9075 + 2.*(9.9724*pr) - 3.*(22.216*pr*pr) + 4.*(15.904*pr**3) ) #Eq. A.18
+		Zo_disp = zo1_disp/T + zo2_disp/(T**2) #Eq. A.16
+
+		#Calculate Zo for the segment
+		Zo_seg = Zo_HS + Zo_disp #Eq. A.14
+
+		#Calculate Z_Segment
+		sum = 0
+		for i in range(0,num_c):
+			sum += mix.xcomp[i]*mix.m[i]
+		zseg = 1.0 + (Zo_seg - 1.)*sum #Eq. A.13
+		print zseg
+		return zseg
+
+
 
 """Initialize it"""
 T=313.0 #Temperature (Kelvins)
@@ -68,5 +104,6 @@ num_c = 2
 EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
 EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
 mix = Mix(EtOH1,EtOH2)
-Z_Chain(T,dens_num,mix)
+Z_Seg(T,dens_num,mix)
+#Z_Chain(T,dens_num,mix)
 
