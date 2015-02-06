@@ -8,24 +8,37 @@ from SAFT import *
 
 
 #Eq. A.5
-#d[g_jk(djk)hs] / d[p_i]
 
 def mu_Ass(T,dens_num,mix):
-	num_c = len(mix.xcomp)
-	print num_c
-	deriv_rdf = np.zeros((num_c,num_c,num_c))
-	for i in range(0,num_c):
-		for j in range(0,num_c):
-			for k in range(0,num_c):
-				print i,j,k
-				term1 = d[i]**3 /(1-zeta[3])**2
-				term2 =  d[i]**2 / (1-zeta[3])**2 + 2*(d[i]**3)*zeta[2] / (1-zeta[3])**3
-				term2 = term2 * (3*d[j]*d[k]/(d[j]+d[k]) 
-				term3a = 2.0 * (d[i]**2) * zeta[2] / (1-zeta[3])**3 
-				term3b = 3.*(d[i]**3) * (zeta[2]**2) / (1-zeta[3])**4
-				term3 = term3a + term3b
-				term3 = term3 * 2.*(d[j]*d[k]/(d[j]+d[k])**2)
-				deriv_rdf[j,k,i] = pi*mix.m[i]*( term1 + term2 + term3 ) / 6.0
+
+		num_c = len(mix.xcomp)
+
+		#Calculate temp-dependent segment diameter for each compound
+		d=[0,0] #FIXMELATER
+		for i in range(0,num_c):
+			d[i] = HS_Diameter(T,mix.m[i],mix.sigma[i],mix.epsilon[i])
+
+		#Calculate the Zeta terms for RDF 
+		zeta = [0,0,0,0] 
+		for i in range(0,4):
+			for j in range(0,num_c):
+				zeta[i] +=  mix.xcomp[j]*mix.m[j]*d[j]**i #Eq. 27
+			zeta[i] *= dens_num*pi/6.0
+
+		#d[g_jk(djk)hs] / d[p_i]
+		deriv_rdf = np.zeros((num_c,num_c,num_c))
+		for i in range(0,num_c):
+			for j in range(0,num_c):
+				for k in range(0,num_c):
+					term1 = d[i]**3 /(1-zeta[3])**2
+					term2 =  d[i]**2 / (1-zeta[3])**2 + 2*(d[i]**3)*zeta[2] / (1-zeta[3])**3
+					term2 = term2 * 3*d[j]*d[k]/(d[j]+d[k]) 
+					term3a = 2.0 * (d[i]**2) * zeta[2] / (1-zeta[3])**3 
+					term3b = 3.*(d[i]**3) * (zeta[2]**2) / (1-zeta[3])**4
+					term3 = term3a + term3b
+					term3 = term3 * 2.*(d[j]*d[k]/(d[j]+d[k])**2)
+					deriv_rdf[j,k,i] = pi*mix.m[i]*( term1 + term2 + term3 ) / 6.0 #Eq. A.5
+					print deriv_rdf[j,k,i]
 
 
 
@@ -50,8 +63,8 @@ eps_ass = np.array([[0.0, 2619],[2619,0.0]]) #Association Energy (Kelvins)
 num_c = 2
 # ----------------------------------------------------------------------------------------------
 
-EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
-EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
+EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.6)
+EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.4)
 mix = Mix(EtOH1,EtOH2)
 mu_Ass(T,dens_num,mix)
 
