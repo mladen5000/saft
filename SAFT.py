@@ -3,6 +3,7 @@ import numpy as np
 from scipy.optimize import fsolve
 from math import *
 from mix import *
+from SAFT import *
 import matplotlib.pyplot as plt
 
 
