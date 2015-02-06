@@ -3,7 +3,6 @@ import numpy as np
 from scipy.optimize import fsolve
 from math import *
 from mix import *
-from SAFT import *
 import matplotlib.pyplot as plt
 
 
@@ -245,6 +244,7 @@ def Sum_Helmholtz(T,dens_num,mix):
 		return A
 	
 """Initialize it"""
+"""
 T=313.0 #Temperature (Kelvins)
 dens_num=0.001 #Density number (Not molar density), given by molar density x N_Avogadro
 m=2.457 #Avg number of segments per chain 
@@ -273,4 +273,4 @@ plt.show()
 
 
 
-
+"""

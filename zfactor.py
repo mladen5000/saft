@@ -4,6 +4,7 @@ from scipy.optimize import fsolve
 from math import *
 from mix import *
 import matplotlib.pyplot as plt
+from SAFT import *
 
 
 #Z_assocs need mu_assocs
@@ -36,19 +37,21 @@ def Z_Chain(T,dens_num,mix):
 				RDF[i,j] = term1 + term2 + term3
 
 		#Determine p * d(lnRDF)/dp
-		dervRDF = np.zeros(num_c)
+		derivRDF = np.zeros(num_c)
 		zchain = 0
 		for i in range(0,num_c):
 			term1 = zeta[3]/(1.0-zeta[3])**2 
-			term2 = 1.5*d[i,i]*zeta[2]/(1.0-zeta[3])**2
-			term3 = 3.0*d[i,i]*zeta[2]*zeta[3]/(1.0-zeta[3])**3
-			term4 = (d[i,i]**2) * (zeta[2]**2) / (1.0-zeta[3])**3
-			term5 = 1.5*(d[i,i]**2)*(zeta[2]**2)*zeta3 / (1.0 - zeta[3])**4
+			term2 = 1.5*d[i]*zeta[2]/(1.0-zeta[3])**2
+			term3 = 3.0*d[i]*zeta[2]*zeta[3]/(1.0-zeta[3])**3
+			term4 = (d[i]**2) * (zeta[2]**2) / (1.0-zeta[3])**3
+			term5 = 1.5*(d[i]**2)*(zeta[2]**2)*zeta[3] / (1.0 - zeta[3])**4
 			factor = 1.0/RDF[i,i]
 			derivRDF[i] = factor * (term1 + term2 + term3 + term4 + term5) #Eq. A.12
 			#Determine Z_chain
 			zchain += mix.xcomp[i]*(1-mix.m[i])*derivRDF[i] #Eq. A.11
 			print zchain
+
+		return 1
 
 """Initialize it"""
 T=313.0 #Temperature (Kelvins)
@@ -61,8 +64,9 @@ kappa = np.array([[0.0, 0.0292],[0.0292,0.0]]) #Association Volume (Dimensionles
 eps_ass = np.array([[0.0, 2619],[2619,0.0]]) #Association Energy (Kelvins)
 num_c = 2
 # ----------------------------------------------------------------------------------------------
-EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.2)
-EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.8)
+
+EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
+EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
 mix = Mix(EtOH1,EtOH2)
 Z_Chain(T,dens_num,mix)
 
