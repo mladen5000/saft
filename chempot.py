@@ -40,6 +40,31 @@ def mu_Ass(T,dens_num,mix):
 					deriv_rdf[j,k,i] = pi*mix.m[i]*( term1 + term2 + term3 ) / 6.0 #Eq. A.5
 					print deriv_rdf[j,k,i]
 
+		#Partial Derivative of Association Strength 
+		for i in range(0,num_c):
+			indx1= -1
+			for j in range(0,num_c):
+				for a in range(0,mix.num_assocs[i]):
+					indx1 += 1
+					indx2 = -1
+					for k in range(0,num_c):
+						for b in range(0,mix.num_assocs[k]):
+							indx2 += 1
+							if i == k: #same component
+								kappa = kappa[i][a,b]
+								epsilon = mix.eps_ass[i][a,b]
+							else:
+								k1 = mix.kappa[i].max()
+								k2 = mix.kappa[k].max()
+								e1 = mix.eps_ass[i].max()
+								e2 = mix.eps_ass[k].max()
+								kappa = sqrt(k1*k2) * (sqrt(mix.sigma[i]*mix.sigma[k])/(0.5*(mix.sigma[i]+mix.sigma[k])))**3
+								epsilon = 0.5*(e1+e2)
+
+							djk = (d[j] +d[k])/2.0
+							deriv_delta[indx1,indx2,i] = djk**3 * deriv_rdf[j,k,i] * kappa*(exp(epsilon/T) - 1)
+						
+
 
 
 
