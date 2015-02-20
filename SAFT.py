@@ -60,7 +60,7 @@ def Helmholtz_Chain(T,dens_num,mix):
 		for i in range(0,num_c):
 				a_chain += mix.xcomp[i] * (1. - mix.m[i]) * log(RDF[i,i])
 
-		return a_chain
+		return a_chain, RDF
 
 def Helmholtz_Seg(T,dens_num,mix):
 		"""Provides the Segment contribution to Helmholtz energy
@@ -125,6 +125,7 @@ def Helmholtz_Seg(T,dens_num,mix):
 def Xa_Calculation(Xa,T,dens_num,mix,d,RDF):
 		#Total number of associating sites
 		num_assocs = mix.num_assocs[0]+mix.num_assocs[1] #FIXMELATER only for binary mixtures atm
+		num_c = 2 #FIXMELATER
 		
 		#Association Strength
 		delta = np.zeros((num_assocs,num_assocs))
@@ -181,6 +182,7 @@ def Xa_Calculation(Xa,T,dens_num,mix,d,RDF):
 def Helmholtz_Ass(T,dens_num,mix):
 		"""Provides the Association contribution to Helmholtz energy
 		"""
+		num_c =2 
 
 		#Calculate temp-dependent segment diameter for each compound
 		d=[0,0] #FIXMELATER
@@ -219,15 +221,15 @@ def Helmholtz_Ass(T,dens_num,mix):
 				indx1 += 1
 				sum1 += log(Xa[indx1]) - Xa[indx1]/2.0
 			A_assoc += mix.xcomp[i]*(sum1 + 0.5*mix.num_assocs[i])
-		return A_assoc
+		return A_assoc,Xa
 
 
 def Sum_Helmholtz(T,dens_num,mix):
 
 		#Call Necessary functions
-		a_assoc = Helmholtz_Ass(T,dens_num,mix)
+		a_assoc,xa = Helmholtz_Ass(T,dens_num,mix)
 		a_seg 	= Helmholtz_Seg(T,dens_num,mix)
-		a_chain = Helmholtz_Chain(T,dens_num,mix)
+		a_chain,RDF = Helmholtz_Chain(T,dens_num,mix)
 		A = a_assoc + a_seg + a_chain
 		"""
 		#Print it out
@@ -255,6 +257,7 @@ kappa = np.array([[0.0, 0.0292],[0.0292,0.0]]) #Association Volume (Dimensionles
 eps_ass = np.array([[0.0, 2619],[2619,0.0]]) #Association Energy (Kelvins)
 num_c = 2
 # ----------------------------------------------------------------------------------------------
+
 EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.2)
 EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.8)
 mix = Mix(EtOH1,EtOH2)
@@ -269,8 +272,7 @@ for tval in T:
 	i += 1
 plt.plot(T,y)
 plt.show()
-
-
-
-
 """
+
+
+
