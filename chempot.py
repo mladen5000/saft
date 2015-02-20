@@ -74,8 +74,45 @@ def mu_Ass(T,dens_num,mix):
 
 
 
-		values = dXa_Calculation(T,dens_num,mix,deriv_delta,deriv_rdf,d,RDF)
-		#print values
+		#dXa/dpi Calculation
+		dXa, Xa = dXa_Calculation(T,dens_num,mix,deriv_delta,deriv_rdf,d,RDF)
+
+		#Convert dXa into a matrix
+		dXa_matrix = np.zeros(( sum(mix.num_assocs),num_c ))
+		for i in range(0,num_c):
+			indx1 = -1;
+			for j in range(0,num_c):
+				for a in range(0,num_c):
+					indx1 += 1
+					dXa_matrix[indx1,i] = dXa[(i-1) * sum(mix.num_assocs) + indx1]
+
+		#Put it all together for Mu_Association
+		term1 = np.zeros((num_c))
+		indx1 = -1
+		for i in range(0,num_c):
+			sum1 = 0
+			for a in range(0,mix.num_assocs[i]):
+				indx1 += 1
+				sum1 += log(Xa[indx1]) - Xa[indx1]/2.0
+
+			term1[i] = sum1 + 0.5*mix.num_assocs[i]
+
+		term2 = np.zeros((num_c))
+		for i in range(0,num_c):
+			indx1 = -1
+			sum1 = 0
+			for j in range(0,num_c):
+				for a in range(0,mix.num_assocs[j]):
+					indx1 += 1
+					sum1 += dens_num*mix.xcomp[j]* (dXa_matrix[indx1,i]*(1.0/Xa[indx1]-0.5))
+
+			term2[i] = sum1
+
+		muass = np.zeros((num_c))
+
+		for i in range(0,num_c):
+			muass[i] = term1[i] + term2[i]
+		print muass
 
 
 
@@ -148,14 +185,11 @@ def dXa_Calculation(T,dens_num,mix,deriv_delta,deriv_rdf,d,RDF):
 					A[indx3,indx3] += 1.0
 					B[indx3] = -(Xa[indx1])**2*(sum1 + sum2)
 
+		#B/A' in python form
 		invA= np.linalg.inv(A.T)
-			
-		print np.dot(B,invA)
-			
+		res = np.dot(B,invA)
 
-
-		#res = np.dot(B,transA)
-		#return res
+		return res,Xa
 		
 
 					
@@ -186,9 +220,10 @@ kappa = np.array([[0.0, 0.0292],[0.0292,0.0]]) #Association Volume (Dimensionles
 eps_ass = np.array([[0.0, 2619],[2619,0.0]]) #Association Energy (Kelvins)
 num_c = 2
 # ----------------------------------------------------------------------------------------------
+#FIXMELATER Playing with the xcomp doesn't match matlab values
 
-EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
-EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
+EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.50)
+EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.50)
 mix = Mix(EtOH1,EtOH2)
 mu_Ass(T,dens_num,mix)
 
