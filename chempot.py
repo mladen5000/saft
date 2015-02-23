@@ -112,7 +112,7 @@ def mu_Ass(T,dens_num,mix):
 
 		for i in range(0,num_c):
 			muass[i] = term1[i] + term2[i]
-		print muass
+		return muass
 
 
 
@@ -225,5 +225,6 @@ num_c = 2
 EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.50)
 EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.50)
 mix = Mix(EtOH1,EtOH2)
+
 mu_Ass(T,dens_num,mix)
 

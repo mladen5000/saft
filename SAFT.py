@@ -120,7 +120,7 @@ def Helmholtz_Seg(T,dens_num,mix):
 		a_disp = (epsilonX/T) * ( a01_disp + a02_disp / (T/epsilonX) )	
 		
 		a_seg = a_hs + a_disp
-		return a_seg
+		return a_seg, epsilonX, a01_disp, a02_disp
 
 def Xa_Calculation(Xa,T,dens_num,mix,d,RDF):
 		#Total number of associating sites
@@ -228,7 +228,7 @@ def Sum_Helmholtz(T,dens_num,mix):
 
 		#Call Necessary functions
 		a_assoc,xa = Helmholtz_Ass(T,dens_num,mix)
-		a_seg 	= Helmholtz_Seg(T,dens_num,mix)
+		a_seg,epsx,a01,a02 	= Helmholtz_Seg(T,dens_num,mix)
 		a_chain,RDF = Helmholtz_Chain(T,dens_num,mix)
 		A = a_assoc + a_seg + a_chain
 		"""

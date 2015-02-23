@@ -5,6 +5,7 @@ from math import *
 from mix import *
 import matplotlib.pyplot as plt
 from SAFT import *
+from chempot import *
 
 
 
@@ -43,14 +44,17 @@ def Z_Chain(T,dens_num,mix):
 			term5 = 1.5*(d[i]**2)*(zeta[2]**2)*zeta[3] / (1.0 - zeta[3])**4
 			factor = 1.0/RDF[i,i]
 			derivRDF[i] = factor * (term1 + term2 + term3 + term4 + term5) #Eq. A.12
-			#Determine Z_chain
+
+		#Determine Z_chain
+		for i in range(0,num_c):
 			zchain += mix.xcomp[i]*(1-mix.m[i])*derivRDF[i] #Eq. A.11
-			print zchain
-			return zchain
+		print "ZCHAIN",zchain
+		return zchain
 
 def Z_Seg(T,dens_num,mix):
 		#Calculate temp-dependent segment diameter for each compound
 		d=[0,0] #FIXMELATER
+		dontcare, epsilon_X, a01, a02 = Helmholtz_Seg(T,dens_num,mix)
 		for i in range(0,num_c):
 			d[i] = HS_Diameter(T,mix.m[i],mix.sigma[i],mix.epsilon[i])
 
@@ -70,7 +74,8 @@ def Z_Seg(T,dens_num,mix):
 		#Calculate Zo for Dispersion
 		zo1_disp = pr * (-8.595 - 2.*(4.5424*pr) - 3.*(2.1268*pr*pr) + 4.*(10.285*pr**3) ) #Eq. A.17
 		zo2_disp = pr * (-1.9075 + 2.*(9.9724*pr) - 3.*(22.216*pr*pr) + 4.*(15.904*pr**3) ) #Eq. A.18
-		Zo_disp = zo1_disp/T + zo2_disp/(T**2) #Eq. A.16
+		Tr = T/epsilon_X
+		Zo_disp = zo1_disp/Tr + zo2_disp/(Tr**2) #Eq. A.16
 
 		#Calculate Zo for the segment
 		Zo_seg = Zo_HS + Zo_disp #Eq. A.14
@@ -80,9 +85,29 @@ def Z_Seg(T,dens_num,mix):
 		for i in range(0,num_c):
 			sum += mix.xcomp[i]*mix.m[i]
 		zseg = 1.0 + (Zo_seg - 1.)*sum #Eq. A.13
-		print zseg
-		return zseg
+		print "ZSEG",zseg
+		return zseg, Zo_seg
 
+
+def Z_Assoc(T,dens_num,mix):
+	num_c = 2 #FIXMELATER
+	mu_ass = mu_Ass(T,dens_num,mix)
+	A_ass,xa = Helmholtz_Ass(T,dens_num,mix)
+	sum = 0
+	for i in range(0,num_c):
+		sum += mix.xcomp[i] * mu_ass[i]
+	Z_ass = sum - A_ass
+	print "ZASS",Z_ass
+	return Z_ass
+
+def Z_TOTAL(T,dens_num,mix):
+	z_ass = Z_Assoc(T,dens_num,mix)
+	z_chain = Z_Chain(T,dens_num,mix)
+	z_seg,z0 = Z_Seg(T,dens_num,mix)
+	Z = z_ass + z_chain + z_seg
+	print Z
+	return Z
+	
 
 
 """Initialize it"""
@@ -91,7 +116,7 @@ dens_num=0.001 #Density number (Not molar density), given by molar density x N_A
 m=2.457 #Avg number of segments per chain 
 sigma=3.044 #Temperature Independent diameter (Angstroms)
 epsilon = 213.48 #LJ Interaction energy (Kelvins), ((technically epsilon/k))
-num_assocs=0
+num_assocs=2
 kappa = np.array([[0.0, 0.0292],[0.0292,0.0]]) #Association Volume (Dimensionless)
 eps_ass = np.array([[0.0, 2619],[2619,0.0]]) #Association Energy (Kelvins)
 num_c = 2
@@ -100,6 +125,6 @@ num_c = 2
 EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
 EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
 mix = Mix(EtOH1,EtOH2)
-Z_Seg(T,dens_num,mix)
-#Z_Chain(T,dens_num,mix)
+Z_TOTAL(T,dens_num,mix)
+
 
