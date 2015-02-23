@@ -120,6 +120,7 @@ def Helmholtz_Seg(T,dens_num,mix):
 		a_disp = (epsilonX/T) * ( a01_disp + a02_disp / (T/epsilonX) )	
 		
 		a_seg = a_hs + a_disp
+		#FIXMELATER, This is a0seg not aseg, need to add one more line
 		return a_seg, epsilonX, a01_disp, a02_disp
 
 def Xa_Calculation(Xa,T,dens_num,mix,d,RDF):

@@ -5,6 +5,7 @@ from math import *
 from mix import *
 import matplotlib.pyplot as plt
 from SAFT import *
+from zfactor import *
 
 
 
@@ -192,19 +193,54 @@ def dXa_Calculation(T,dens_num,mix,deriv_delta,deriv_rdf,d,RDF):
 		return res,Xa
 		
 
-					
+def mu_Chain(T,dens_num,mix):
+	"""
+	Chain term for chemical potential
+	"""
+
+	#Pair Correlation Partial Derivative term
+	num_c = len(mix.xcomp)
+	NA = 6.022e23
+
+	#Calculate temp-dependent segment diameter for each compound
+	d=[0,0] #FIXMELATER
+	for i in range(0,num_c):
+		d[i] = HS_Diameter(T,mix.m[i],mix.sigma[i],mix.epsilon[i])
+
+	#Calculate the Zeta terms for RDF 
+	zeta = [0,0,0,0] 
+	for i in range(0,4):
+		for j in range(0,num_c):
+			zeta[i] +=  mix.xcomp[j]*mix.m[j]*d[j]**i #Eq. 27
+		zeta[i] *= dens_num*pi/6.0
+
+	#Calculate the RDF term
+	chain, RDF = Helmholtz_Chain(T,dens_num,mix)
+
+	#Calculate d(logRDF[j,j])/d(rho[i])
+	dlogRDF = np.zeros((num_c,num_c))
+	for i in range(0,num_c):
+		for j in range(0,num_c):
+			term1 = (d[i]**3) / (1 - zeta[3])**2
+			term2 = (1.5*d[i]*d[j]**2) / (1 - zeta[3])**2
+			term3 = (3*zeta[2]*d[j]*d[i]**3) / (1 - zeta[3])**3
+			term4 = ( d[j]*d[j]*d[i]*d[i]*zeta[2] ) / (1 - zeta[3])**3
+			term5 = (1.5*(d[j]**2)*(d[i]**3)*(zeta[2]**2)) / (1-zeta[3])**4
+			factor = (pi/6.0)*mix.m[i]*NA / RDF[j,j]
+			dlogRDF[j,i] = factor*(term1 + term2 + term3 + term4 + term5) #Eq. A7
+	
+	#Calculate RHS TERM
+	sum = np.zeros((num_c))
+	muchain = np.zeros((num_c))
+
+	for i in range(0,num_c):
+		for j in range(0,num_c):
+			sum[i] += mix.xcomp[j]*dens_num/NA*(1.0 - mix.m[j])*dlogRDF[j,i]
+
+		muchain[i] = (1-mix.m[i])*log(RDF[i,i]) + sum[i] #Eq. A.6
 
 
-
-
-
-
-
-
-
-
-
-
+	return muchain
 
 
 
@@ -225,6 +261,4 @@ num_c = 2
 EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.50)
 EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.50)
 mix = Mix(EtOH1,EtOH2)
-
-mu_Ass(T,dens_num,mix)
 

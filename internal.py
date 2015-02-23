@@ -40,7 +40,6 @@ def u_Seg(T,dens_num,mix):
 
 	#Calculate u0
 	u0 = lhs_term - 3.*(z0seg - 1.)*rhs_term #Eq. A19
-	print u0
 	return u0
 
 
@@ -59,5 +58,4 @@ num_c = 2
 EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
 EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
 mix = Mix(EtOH1,EtOH2)
-print u_Seg(T,dens_num,mix)
 

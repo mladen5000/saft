@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 import numpy as np
 from scipy.optimize import fsolve
+from chempot import *
 from math import *
 from mix import *
 import matplotlib.pyplot as plt
 from SAFT import *
-from chempot import *
 
 
 
@@ -48,7 +48,6 @@ def Z_Chain(T,dens_num,mix):
 		#Determine Z_chain
 		for i in range(0,num_c):
 			zchain += mix.xcomp[i]*(1-mix.m[i])*derivRDF[i] #Eq. A.11
-		print "ZCHAIN",zchain
 		return zchain
 
 def Z_Seg(T,dens_num,mix):
@@ -85,7 +84,6 @@ def Z_Seg(T,dens_num,mix):
 		for i in range(0,num_c):
 			sum += mix.xcomp[i]*mix.m[i]
 		zseg = 1.0 + (Zo_seg - 1.)*sum #Eq. A.13
-		print "ZSEG",zseg
 		return zseg, Zo_seg
 
 
@@ -97,7 +95,6 @@ def Z_Assoc(T,dens_num,mix):
 	for i in range(0,num_c):
 		sum += mix.xcomp[i] * mu_ass[i]
 	Z_ass = sum - A_ass
-	print "ZASS",Z_ass
 	return Z_ass
 
 def Z_TOTAL(T,dens_num,mix):
@@ -105,7 +102,6 @@ def Z_TOTAL(T,dens_num,mix):
 	z_chain = Z_Chain(T,dens_num,mix)
 	z_seg,z0 = Z_Seg(T,dens_num,mix)
 	Z = z_ass + z_chain + z_seg
-	print Z
 	return Z
 	
 
@@ -125,6 +121,5 @@ num_c = 2
 EtOH1 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
 EtOH2 = Compound(sigma,epsilon,m,num_assocs,kappa,eps_ass,.5)
 mix = Mix(EtOH1,EtOH2)
-Z_TOTAL(T,dens_num,mix)
 
 
