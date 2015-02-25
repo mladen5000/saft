@@ -132,11 +132,11 @@ def Xa_Calculation(Xa,T,dens_num,mix,d,RDF):
 		delta = np.zeros((num_assocs,num_assocs))
 		indx1 =-1 
 		for i in range(0,num_c):
-			for j in range(0,mix.num_assocs[0]): #FIXMELATER binary case only
+			for j in range(0,mix.num_assocs[i]): 
 				indx1 += 1
 				indx2 =-1 
 				for k in range(0,num_c):
-					for l in range(0,mix.num_assocs[1]): #FIXMELATER binary case only
+					for l in range(0,mix.num_assocs[k]):
 						indx2 += 1
 
 						if i==k:
@@ -156,28 +156,24 @@ def Xa_Calculation(Xa,T,dens_num,mix,d,RDF):
 						delta[indx1,indx2] = dij**3 * RDF[i,k] * kappa * (exp(epsilon/T) - 1.0 )
 		#FIXMELATER The loops of ijkl need to fix j and l because num_assocs is an array, should be in mix to contain each
 
-		#FIXMELATER fixed at 4
-		res = np.zeros((4,1))
+		res = np.zeros((num_assocs))
 		indx1 = -1
 		for i in range(0,num_c):
-			for j in range(0,mix.num_assocs[0]):
+			for j in range(0,mix.num_assocs[i]):
 				indx1 += 1
 				indx2 = -1
 				RHS_Xa = 0
 				for k in range(0,num_c):
-					for l in range(0,mix.num_assocs[1]):
+					for l in range(0,mix.num_assocs[k]):
 						indx2 += 1
 
 						RHS_Xa += mix.xcomp[k]*dens_num*Xa[indx2]*delta[indx1,indx2]
 
 
 				res[indx1] = Xa[indx1] - (1. + RHS_Xa)**(-1) #Minimize the difference between Xa and RHS of Xa, should min to 0...ideally
+		res.tolist() #fsolve only takes lists as a return, doesnt like np arrays
+		return res
 
-
-		#FIXMELATER
-		#Only works for n = fixed right now
-		output = [res.item(0),res.item(1),res.item(2),res.item(3)]
-		return output
 
 
 def Helmholtz_Ass(T,dens_num,mix):
@@ -209,16 +205,17 @@ def Helmholtz_Ass(T,dens_num,mix):
 
 		#Initial Values to guess for X^i
 		#Only works for num_assocs=4 right now
-		x0 = [0.3,0.3,0.3,0.3]
+		x0 = np.zeros((sum(mix.num_assocs)))
+		x0.fill(.5)
 
 		Xa = fsolve( Xa_Calculation , x0 , args=(T,dens_num,mix,d,RDF) )
 
 		#Finally Calculate A_Assoc
 		A_assoc = 0
 		indx1 = -1
-		for i in range(0,2):
+		for i in range(0,2): #FIXMELATER
 			sum1 = 0
-			for j in mix.num_assocs:
+			for j in range(0,mix.num_assocs[i]):
 				indx1 += 1
 				sum1 += log(Xa[indx1]) - Xa[indx1]/2.0
 			A_assoc += mix.xcomp[i]*(sum1 + 0.5*mix.num_assocs[i])

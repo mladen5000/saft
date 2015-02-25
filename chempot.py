@@ -50,13 +50,13 @@ def mu_Ass(T,dens_num,mix):
 		for i in range(0,num_c):
 			indx1= -1
 			for j in range(0,num_c):
-				for a in range(0,mix.num_assocs[i]):
+				for a in range(0,mix.num_assocs[j]):
 					indx1 += 1
 					indx2 = -1
 					for k in range(0,num_c):
 						for b in range(0,mix.num_assocs[k]):
 							indx2 += 1
-							if i == k: #same component
+							if j == k: #same component
 								kappa = mix.kappa[i][a,b]
 								epsilon = mix.eps_ass[i][a,b]
 							else:
@@ -83,7 +83,7 @@ def mu_Ass(T,dens_num,mix):
 		for i in range(0,num_c):
 			indx1 = -1;
 			for j in range(0,num_c):
-				for a in range(0,num_c):
+				for a in range(0,mix.num_assocs[j]):
 					indx1 += 1
 					dXa_matrix[indx1,i] = dXa[(i-1) * sum(mix.num_assocs) + indx1]
 
@@ -111,8 +111,18 @@ def mu_Ass(T,dens_num,mix):
 
 		muass = np.zeros((num_c))
 
+		#Complicated/stupid quickfix to keep terms correct
+		#Switch terms here, and then create an 'index' in the next loop to swap muass i's
+		swap = term1[0]
+		term1[0] = term1[1]
+		term1[1] = swap
+
+		#FIXMELATER,currently works but should be more intelligent and won't work later 
+
+		index = num_c
 		for i in range(0,num_c):
-			muass[i] = term1[i] + term2[i]
+			index += -1
+			muass[index] = term1[i] + term2[i]
 		return muass
 
 
